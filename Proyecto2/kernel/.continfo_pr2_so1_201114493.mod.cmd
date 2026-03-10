@@ -1,0 +1,1 @@
+savedcmd_/home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/continfo_pr2_so1_201114493.mod := printf '%s\n'   continfo_pr2_so1_201114493.o | awk '!x[$$0]++ { print("/home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/"$$0) }' > /home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/continfo_pr2_so1_201114493.mod

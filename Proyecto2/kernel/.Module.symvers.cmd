@@ -1,0 +1,1 @@
+savedcmd_/home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/Module.symvers -T /home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/modules.order -i Module.symvers -e 

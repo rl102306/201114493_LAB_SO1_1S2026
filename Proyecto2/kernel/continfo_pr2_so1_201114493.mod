@@ -1,0 +1,1 @@
+/home/ronaldolara/201114493_LAB_SO1_1S2026/Proyecto2/kernel/continfo_pr2_so1_201114493.o

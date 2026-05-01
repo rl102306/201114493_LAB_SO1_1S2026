@@ -1,0 +1,170 @@
+# KubeVirt VM — Grafana (Deployment 4 - VM)
+# Instala Grafana 11 + redis-datasource plugin.
+# El datasource Valkey se provisiona automáticamente vía cloud-init.
+# El dashboard se importa via API tras el primer arranque (ver README).
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: grafana-vm
+  namespace: mumk8s
+  labels:
+    app: grafana-vm
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        app: grafana-vm
+        kubevirt.io/vm: grafana-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 2Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: 34.172.8.2:5000/mumk8s/fedora:39
+        - name: cloudinit
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              package_update: true
+              packages:
+                - wget
+                - curl
+
+              write_files:
+                # Datasource provisioning
+                - path: /etc/grafana/provisioning/datasources/valkey.yaml
+                  permissions: '0644'
+                  content: |
+                    apiVersion: 1
+                    datasources:
+                      - name: Valkey
+                        uid: valkey
+                        type: redis-datasource
+                        url: redis://valkey-vm-svc.mumk8s.svc.cluster.local:6379
+                        access: proxy
+                        isDefault: true
+                        jsonData:
+                          tlsSkipVerify: true
+
+                # Dashboard provisioning config
+                - path: /etc/grafana/provisioning/dashboards/default.yaml
+                  permissions: '0644'
+                  content: |
+                    apiVersion: 1
+                    providers:
+                      - name: mumk8s
+                        type: file
+                        disableDeletion: false
+                        updateIntervalSeconds: 30
+                        options:
+                          path: /var/lib/grafana/dashboards
+
+                # Grafana config
+                - path: /etc/grafana/grafana.ini
+                  permissions: '0644'
+                  content: |
+                    [server]
+                    http_addr = 0.0.0.0
+                    http_port = 3000
+
+                    [security]
+                    admin_user = admin
+                    admin_password = admin123
+
+                    [auth.anonymous]
+                    enabled = true
+                    org_role = Viewer
+
+                    [plugins]
+                    allow_loading_unsigned_plugins = redis-datasource
+
+              runcmd:
+                # Install Grafana
+                - wget -q https://dl.grafana.com/oss/release/grafana-11.0.0.linux-amd64.tar.gz -O /tmp/grafana.tar.gz
+                - tar -xzf /tmp/grafana.tar.gz -C /opt/
+                - mv /opt/grafana-v11.0.0 /opt/grafana
+                - mkdir -p /var/lib/grafana/dashboards
+                - mkdir -p /etc/grafana/provisioning/datasources
+                - mkdir -p /etc/grafana/provisioning/dashboards
+                # Copy provisioning files into grafana dir
+                - cp /etc/grafana/provisioning/datasources/valkey.yaml /opt/grafana/conf/provisioning/datasources/
+                - cp /etc/grafana/provisioning/dashboards/default.yaml /opt/grafana/conf/provisioning/dashboards/
+                - cp /etc/grafana/grafana.ini /opt/grafana/conf/custom.ini
+                # Install Redis datasource plugin
+                - /opt/grafana/bin/grafana cli --pluginsDir /opt/grafana/data/plugins plugins install redis-datasource
+                # Systemd service
+                - |
+                  cat > /etc/systemd/system/grafana.service << 'EOF'
+                  [Unit]
+                  Description=Grafana
+                  After=network.target
+
+                  [Service]
+                  WorkingDirectory=/opt/grafana
+                  ExecStart=/opt/grafana/bin/grafana-server \
+                    --config=/opt/grafana/conf/custom.ini \
+                    --homepath=/opt/grafana \
+                    cfg:default.paths.data=/var/lib/grafana \
+                    cfg:default.paths.provisioning=/opt/grafana/conf/provisioning
+                  Restart=always
+                  RestartSec=5
+
+                  [Install]
+                  WantedBy=multi-user.target
+                  EOF
+                - systemctl daemon-reload
+                - systemctl enable grafana
+                - systemctl start grafana
+                # Wait for Grafana to be ready then import dashboard via API
+                - |
+                  for i in $(seq 1 30); do
+                    if curl -s http://localhost:3000/api/health | grep -q ok; then
+                      break
+                    fi
+                    sleep 2
+                  done
+                # Download dashboard JSON from the OCI artifact or use inline
+                # (see README — push dashboard.json to Zot as OCI Artifact)
+                - |
+                  if [ -f /tmp/dashboard.json ]; then
+                    curl -s -X POST http://admin:admin123@localhost:3000/api/dashboards/import \
+                      -H 'Content-Type: application/json' \
+                      -d "{\"dashboard\": $(cat /tmp/dashboard.json), \"overwrite\": true, \"folderId\": 0}"
+                  fi
+---
+# Service to expose Grafana (LoadBalancer = external IP for browser access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-vm-svc
+  namespace: mumk8s
+  labels:
+    app: grafana-vm
+spec:
+  selector:
+    kubevirt.io/vm: grafana-vm
+  ports:
+    - name: grafana
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: LoadBalancer

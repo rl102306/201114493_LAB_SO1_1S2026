@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-consumer-svc
+  namespace: mumk8s
+  labels:
+    app: go-consumer
+spec:
+  selector:
+    app: go-consumer
+  # go-consumer has no inbound traffic; Service kept for potential health endpoints
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP

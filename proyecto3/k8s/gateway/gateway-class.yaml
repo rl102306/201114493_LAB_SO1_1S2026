@@ -1,0 +1,9 @@
+# GKE Gateway API — GatewayClass
+# Uses the GKE managed external L7 load balancer controller.
+# For internal load balancer use: gke-l7-rilb
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: mumk8s-gateway-class
+spec:
+  controllerName: networking.gke.io/gateway

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mumk8s-config
+  namespace: mumk8s
+data:
+  # rust-api → go-grpc-client
+  GRPC_CLIENT_URL: "http://go-grpc-client-svc.mumk8s.svc.cluster.local:8080"
+
+  # go-grpc-client → go-grpc-server (Deployment 2)
+  GRPC_SERVER_ADDR: "go-grpc-server-svc.mumk8s.svc.cluster.local:50051"
+
+  # go-grpc-server (Deployment 2) → go-rabbitmq-writer (Deployment 3)
+  RABBITMQ_WRITER_URL: "http://go-rabbitmq-writer-svc.mumk8s.svc.cluster.local:8081"
+
+  # RabbitMQ — used by go-rabbitmq-writer (D3) and go-consumer
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq-svc.mumk8s.svc.cluster.local:5672/"
+  RABBITMQ_QUEUE: "war_reports"
+
+  # Valkey (KubeVirt VM)
+  VALKEY_ADDR: "valkey-vm-svc.mumk8s.svc.cluster.local:6379"
+
+  # Ports
+  PORT: "8080"
+  GRPC_PORT: "50051"

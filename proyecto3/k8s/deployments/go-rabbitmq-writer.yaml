@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-rabbitmq-writer
+  namespace: mumk8s
+  labels:
+    app: go-rabbitmq-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-rabbitmq-writer
+  template:
+    metadata:
+      labels:
+        app: go-rabbitmq-writer
+    spec:
+      containers:
+        - name: go-rabbitmq-writer
+          image: ${ZOT_HOST}/mumk8s/go-rabbitmq-writer:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: mumk8s-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 20

@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: war-report-route
+  namespace: mumk8s
+spec:
+  parentRefs:
+    - name: mumk8s-gateway
+      namespace: mumk8s
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /grpc-201114493
+      backendRefs:
+        - name: rust-api-svc
+          port: 8080

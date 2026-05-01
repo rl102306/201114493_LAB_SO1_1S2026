@@ -1,0 +1,340 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_VALKEY",
+      "label": "Valkey",
+      "description": "Valkey / Redis datasource",
+      "type": "datasource",
+      "pluginId": "redis-datasource",
+      "pluginName": "Redis"
+    }
+  ],
+  "__requires": [
+    { "type": "datasource", "id": "redis-datasource", "name": "Redis", "version": "2.0.0" },
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "11.0.0" }
+  ],
+  "title": "M.U.M.N.K8s — War Reports",
+  "description": "Monitoreo de reportes militares en tiempo real — Carnet 201114493 — País: RUS",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "tags": ["mumk8s", "war", "kubernetes"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "País Asignado",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "mode": "markdown",
+        "content": "## 🇷🇺 RUS\n**Carnet:** 201114493"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Reportes Recibidos",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "GET global:count"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Máx. Aviones en Aire (Global)",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "GET global:warplanes:max"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Mín. Aviones en Aire (Global)",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "GET global:warplanes:min"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Máx. Barcos en Mar (Global)",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "GET global:warships:max"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Mín. Barcos en Mar (Global)",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "GET global:warships:min"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Moda — Aviones en Aire (Global)",
+      "description": "Valor más frecuente de aviones en aire a nivel global",
+      "gridPos": { "x": 0, "y": 3, "w": 6, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "EVAL \"local h=redis.call('HGETALL',KEYS[1]) local mv='0' local mc=0 for i=1,#h,2 do local c=tonumber(h[i+1]) if c>mc then mc=c mv=h[i] end end return mv\" 1 global:warplanes:freq"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Moda — Barcos en Mar (Global)",
+      "description": "Valor más frecuente de barcos en mar a nivel global",
+      "gridPos": { "x": 6, "y": 3, "w": 6, "h": 3 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "EVAL \"local h=redis.call('HGETALL',KEYS[1]) local mv='0' local mc=0 for i=1,#h,2 do local c=tonumber(h[i+1]) if c>mc then mc=c mv=h[i] end end return mv\" 1 global:warships:freq"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Top Países — Aviones en Aire",
+      "description": "Países con mayor acumulado de aviones reportados",
+      "gridPos": { "x": 12, "y": 3, "w": 12, "h": 6 },
+      "options": {
+        "orientation": "horizontal",
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "ZREVRANGE global:warplanes:ranking 0 4 WITHSCORES"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "barchart",
+      "title": "Top Países — Barcos en Mar",
+      "description": "Países con mayor acumulado de barcos reportados",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 },
+      "options": {
+        "orientation": "horizontal",
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "ZREVRANGE global:warships:ranking 0 4 WITHSCORES"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "RUS — Aviones en Aire (Serie Temporal)",
+      "description": "Evolución de aviones en aire reportados por RUS. Member format: {value}:{seq} — usar transformación 'Extract fields' con separador ':' para obtener el valor numérico.",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "member",
+            "delimiter": ":",
+            "keepTime": true
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "field 1": "warplanes" }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "ZRANGEBYSCORE RUS:warplanes:timeseries -inf +inf WITHSCORES"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "RUS — Barcos en Mar (Serie Temporal)",
+      "description": "Evolución de barcos en mar reportados por RUS.",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "member",
+            "delimiter": ":",
+            "keepTime": true
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "field 1": "warships" }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "redis-datasource", "uid": "${DS_VALKEY}" },
+          "type": "command",
+          "query": "ZRANGEBYSCORE RUS:warships:timeseries -inf +inf WITHSCORES"
+        }
+      ]
+    }
+  ]
+}

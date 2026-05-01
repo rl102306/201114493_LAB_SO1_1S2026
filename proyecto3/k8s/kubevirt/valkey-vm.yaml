@@ -1,0 +1,102 @@
+# KubeVirt VM — Valkey (Redis-compatible key-value store)
+# Requires KubeVirt installed in the cluster.
+# Uses Fedora Cloud container disk + cloud-init to install valkey.
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: valkey-vm
+  namespace: mumk8s
+  labels:
+    app: valkey-vm
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        app: valkey-vm
+        kubevirt.io/vm: valkey-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        memory:
+          guest: 1Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            # Fedora Cloud image with cloud-init support
+            image: 34.172.8.2:5000/mumk8s/fedora:39
+        - name: cloudinit
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              package_update: true
+              packages:
+                - wget
+              runcmd:
+                # Download and install Valkey
+                - wget -q https://github.com/valkey-io/valkey/releases/download/7.2.5/valkey-7.2.5-linux-x86_64.tar.gz -O /tmp/valkey.tar.gz
+                - tar -xzf /tmp/valkey.tar.gz -C /opt/
+                - mv /opt/valkey-7.2.5-linux-x86_64 /opt/valkey
+                # Configure Valkey: bind to all interfaces, save data
+                - |
+                  cat > /etc/valkey.conf << 'EOF'
+                  bind 0.0.0.0
+                  port 6379
+                  daemonize no
+                  save 60 1
+                  appendonly yes
+                  appendfilename "appendonly.aof"
+                  dir /var/lib/valkey
+                  EOF
+                - mkdir -p /var/lib/valkey
+                # Create systemd service
+                - |
+                  cat > /etc/systemd/system/valkey.service << 'EOF'
+                  [Unit]
+                  Description=Valkey Key-Value Store
+                  After=network.target
+
+                  [Service]
+                  ExecStart=/opt/valkey/bin/valkey-server /etc/valkey.conf
+                  Restart=always
+                  RestartSec=5
+
+                  [Install]
+                  WantedBy=multi-user.target
+                  EOF
+                - systemctl daemon-reload
+                - systemctl enable valkey
+                - systemctl start valkey
+---
+# Service to expose Valkey VM inside the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey-vm-svc
+  namespace: mumk8s
+  labels:
+    app: valkey-vm
+spec:
+  selector:
+    kubevirt.io/vm: valkey-vm
+  ports:
+    - name: valkey
+      protocol: TCP
+      port: 6379
+      targetPort: 6379
+  type: ClusterIP

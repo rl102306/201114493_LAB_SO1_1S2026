@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-grpc-client
+  namespace: mumk8s
+  labels:
+    app: go-grpc-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-grpc-client
+  template:
+    metadata:
+      labels:
+        app: go-grpc-client
+    spec:
+      containers:
+        - name: go-grpc-client
+          image: ${ZOT_HOST}/mumk8s/go-grpc-client:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: mumk8s-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20

@@ -27,20 +27,18 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "64Mi"
+              memory: "128Mi"
             limits:
               cpu: "500m"
               memory: "256Mi"
           readinessProbe:
-            httpGet:
-              path: /grpc-201114493
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: /grpc-201114493
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 20

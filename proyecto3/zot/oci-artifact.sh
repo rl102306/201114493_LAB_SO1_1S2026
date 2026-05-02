@@ -12,11 +12,12 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ZOT_HOST="${ZOT_HOST:-localhost:5000}"
-ZOT_CA_FILE="${ZOT_CA_FILE:-/etc/zot/certs/domain.crt}"
+ZOT_CA_FILE="${ZOT_CA_FILE:-${SCRIPT_DIR}/../domain.crt}"
 ARTIFACT_REPO="mumk8s/grpc-proto"
 ARTIFACT_TAG="latest"
-PROTO_FILE="../go-grpc-server/proto/war_report.proto"
+PROTO_FILE="${SCRIPT_DIR}/../go-grpc-server/proto/war_report.proto"
 
 # --------------------------------------------------------------------------
 # PUSH: subir el .proto como OCI Artifact
@@ -24,7 +25,8 @@ PROTO_FILE="../go-grpc-server/proto/war_report.proto"
 push_artifact() {
   echo "==> Subiendo war_report.proto a ${ZOT_HOST}/${ARTIFACT_REPO}:${ARTIFACT_TAG}..."
   oras push \
-    --ca-file "${ZOT_CA_FILE}" \
+    --plain-http \
+    --disable-path-validation \
     "${ZOT_HOST}/${ARTIFACT_REPO}:${ARTIFACT_TAG}" \
     "${PROTO_FILE}:application/vnd.mumk8s.proto.v1"
   echo "==> Proto subido exitosamente."
@@ -38,7 +40,7 @@ pull_artifact() {
   mkdir -p "${output_dir}"
   echo "==> Descargando war_report.proto desde ${ZOT_HOST}/${ARTIFACT_REPO}:${ARTIFACT_TAG}..."
   oras pull \
-    --ca-file "${ZOT_CA_FILE}" \
+    --plain-http \
     --output "${output_dir}" \
     "${ZOT_HOST}/${ARTIFACT_REPO}:${ARTIFACT_TAG}"
   echo "==> Proto descargado en ${output_dir}/"
@@ -48,11 +50,12 @@ pull_artifact() {
 # PUSH DASHBOARD: también sube el dashboard JSON de Grafana como OCI Artifact
 # --------------------------------------------------------------------------
 push_dashboard() {
-  local DASHBOARD_FILE="../k8s/grafana/dashboard.json"
+  local DASHBOARD_FILE="${SCRIPT_DIR}/../k8s/grafana/dashboard.json"
   local DASH_REPO="mumk8s/grafana-dashboard"
   echo "==> Subiendo dashboard.json a ${ZOT_HOST}/${DASH_REPO}:${ARTIFACT_TAG}..."
   oras push \
-    --ca-file "${ZOT_CA_FILE}" \
+    --plain-http \
+    --disable-path-validation \
     "${ZOT_HOST}/${DASH_REPO}:${ARTIFACT_TAG}" \
     "${DASHBOARD_FILE}:application/vnd.mumk8s.grafana-dashboard.v1"
   echo "==> Dashboard subido."
@@ -65,7 +68,7 @@ pull_dashboard() {
   local output_dir="${1:-/tmp}"
   echo "==> Descargando dashboard.json en ${output_dir}..."
   oras pull \
-    --ca-file "${ZOT_CA_FILE}" \
+    --plain-http \
     --output "${output_dir}" \
     "${ZOT_HOST}/mumk8s/grafana-dashboard:${ARTIFACT_TAG}"
   echo "==> Dashboard disponible en ${output_dir}/dashboard.json"

@@ -9,7 +9,7 @@ metadata:
   labels:
     app: valkey-vm
 spec:
-  running: true
+  runStrategy: Always
   template:
     metadata:
       labels:
@@ -38,50 +38,24 @@ spec:
       volumes:
         - name: containerdisk
           containerDisk:
-            # Fedora Cloud image with cloud-init support
-            image: 34.172.8.2:5000/mumk8s/fedora:39
+            image: 34.172.8.2:5000/mumk8s/ubuntu-containerdisk:22.04
         - name: cloudinit
           cloudInitNoCloud:
             userData: |
               #cloud-config
               package_update: true
+              package_upgrade: false
+              chpasswd:
+                list: |
+                  ubuntu:ubuntu123
+                expire: false
               packages:
-                - wget
+                - redis-server
               runcmd:
-                # Download and install Valkey
-                - wget -q https://github.com/valkey-io/valkey/releases/download/7.2.5/valkey-7.2.5-linux-x86_64.tar.gz -O /tmp/valkey.tar.gz
-                - tar -xzf /tmp/valkey.tar.gz -C /opt/
-                - mv /opt/valkey-7.2.5-linux-x86_64 /opt/valkey
-                # Configure Valkey: bind to all interfaces, save data
-                - |
-                  cat > /etc/valkey.conf << 'EOF'
-                  bind 0.0.0.0
-                  port 6379
-                  daemonize no
-                  save 60 1
-                  appendonly yes
-                  appendfilename "appendonly.aof"
-                  dir /var/lib/valkey
-                  EOF
-                - mkdir -p /var/lib/valkey
-                # Create systemd service
-                - |
-                  cat > /etc/systemd/system/valkey.service << 'EOF'
-                  [Unit]
-                  Description=Valkey Key-Value Store
-                  After=network.target
-
-                  [Service]
-                  ExecStart=/opt/valkey/bin/valkey-server /etc/valkey.conf
-                  Restart=always
-                  RestartSec=5
-
-                  [Install]
-                  WantedBy=multi-user.target
-                  EOF
-                - systemctl daemon-reload
-                - systemctl enable valkey
-                - systemctl start valkey
+                - sed -i 's/^bind .*/bind 0.0.0.0/' /etc/redis/redis.conf
+                - sed -i 's/^# save/save/' /etc/redis/redis.conf
+                - systemctl enable redis-server
+                - systemctl restart redis-server
 ---
 # Service to expose Valkey VM inside the cluster
 apiVersion: v1

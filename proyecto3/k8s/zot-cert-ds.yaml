@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: zot-cert-installer
+  namespace: kube-system
+  labels:
+    app: zot-cert-installer
+spec:
+  selector:
+    matchLabels:
+      app: zot-cert-installer
+  template:
+    metadata:
+      labels:
+        app: zot-cert-installer
+    spec:
+      hostPID: true
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: configure-containerd
+          image: alpine:3.19
+          securityContext:
+            privileged: true
+          command:
+            - sh
+            - -c
+            - |
+              CONFIG=/host/etc/containerd/config.toml
+              MIRROR_SECTION='[plugins."io.containerd.grpc.v1.cri".registry.mirrors."34.172.8.2:5000"]'
+              ENDPOINT='  endpoint = ["http://34.172.8.2:5000"]'
+
+              if grep -q '34.172.8.2:5000.*mirrors\|mirrors.*34.172.8.2:5000' "$CONFIG"; then
+                echo "Mirror ya configurado en $(cat /host/etc/hostname)"
+              else
+                printf '\n%s\n%s\n' "$MIRROR_SECTION" "$ENDPOINT" >> "$CONFIG"
+                echo "Mirror agregado en $(cat /host/etc/hostname)"
+                nsenter -t 1 -m -u -i -n -p -- \
+                  systemd-run --on-active=10 --unit=containerd-restart-zot-$(date +%s) \
+                  systemctl restart containerd
+                echo "Reinicio de containerd programado"
+              fi
+              echo "Listo"
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: "1m"
+              memory: "8Mi"
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory

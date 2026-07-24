@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kubectl cluster-info *)",
+      "Bash(kubectl get *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c ' *)",
+      "Bash(kubectl api-resources *)",
+      "Bash(export KUBECONFIG=/root/.kube/config)",
+      "Read(//home/ronaldo-lara/**)",
+      "Read(//home/ronaldo-lara/.kube/**)"
+    ]
+  }
+}

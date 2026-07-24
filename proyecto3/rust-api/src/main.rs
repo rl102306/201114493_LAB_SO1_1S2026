@@ -76,6 +76,8 @@ async fn handle_report(
         ));
     }
 
+    info!("Received report: country={} warplanes={} warships={}", payload.country, payload.warplanes_in_air, payload.warships_in_water);
+
     let url = format!("{}/report", state.grpc_client_url);
     let resp = state
         .http_client

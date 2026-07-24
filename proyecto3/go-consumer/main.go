@@ -208,7 +208,7 @@ func main() {
 					d.Nack(false, true)
 					continue
 				}
-				log.Printf("OK: %s planes=%d ships=%d", msg.Country, msg.WarplanesInAir, msg.WarshipsInWater)
+				log.Printf("Mensaje procesado y guardado en Valkey: %s planes=%d ships=%d", msg.Country, msg.WarplanesInAir, msg.WarshipsInWater)
 				d.Ack(false)
 
 			case e := <-connClose:
